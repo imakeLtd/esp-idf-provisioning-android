@@ -207,7 +207,11 @@ public class ESPDevice {
                 public void onAvailable(Network network) {
 
                     Log.e(TAG, "Network is available - 1");
-                    connectivityManager.bindProcessToNetwork(network);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        connectivityManager.bindProcessToNetwork(network);
+                    } else {
+                        ConnectivityManager.setProcessDefaultNetwork(network);
+                    }
                     getCapabilitiesFromDevice();
                 }
 
@@ -239,7 +243,11 @@ public class ESPDevice {
                 public void onAvailable(Network network) {
 
                     Log.e(TAG, "Network is available - 2");
-                    connectivityManager.bindProcessToNetwork(network);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        connectivityManager.bindProcessToNetwork(network);
+                    } else {
+                        ConnectivityManager.setProcessDefaultNetwork(network);
+                    }
                 }
 
                 @Override
@@ -1004,7 +1012,11 @@ public class ESPDevice {
             public void onAvailable(Network network) {
 
                 Log.e(TAG, "Network is available - 3");
-                connectivityManager.bindProcessToNetwork(network);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    connectivityManager.bindProcessToNetwork(network);
+                } else {
+                    ConnectivityManager.setProcessDefaultNetwork(network);
+                }
             }
 
             @Override
@@ -1029,7 +1041,11 @@ public class ESPDevice {
         if (connectivityManager != null) {
 
             try {
-                connectivityManager.bindProcessToNetwork(null);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    connectivityManager.bindProcessToNetwork(null);
+                } else {
+                    ConnectivityManager.setProcessDefaultNetwork(null);
+                }
                 connectivityManager.unregisterNetworkCallback(networkCallback);
             } catch (Exception e) {
                 Log.e(TAG, "Connectivity Manager is already unregistered");
