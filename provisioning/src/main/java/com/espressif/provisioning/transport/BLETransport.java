@@ -23,6 +23,8 @@ import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.Build;
 import android.util.Log;
 
@@ -177,7 +179,15 @@ public class BLETransport implements Transport {
             super.onConnectionStateChange(gatt, status, newState);
             Log.d(TAG, "onConnectionStateChange, New state : " + newState + ", Status : " + status);
 
-            if (status == BluetoothGatt.GATT_FAILURE) {
+            if (status == 22) {
+                // terminated by local host (cancelled by user?)
+                Log.d(TAG, "onConnectionStateChange, status 22 - terminated by local host (cancelled by user?)");
+                SharedPreferences prefs = context.getSharedPreferences("prefs.db", 0);
+                SharedPreferences.Editor prefEditor = prefs.edit();
+                prefEditor.putBoolean("EspConnectionCancelled", true);
+                prefEditor.commit();
+                Log.d(TAG, "onConnectionStateChange, SharedPreferences.putBoolean.EspConnectionCancelled = true");
+            } else if (status == BluetoothGatt.GATT_FAILURE) {
                 EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_CONNECTION_FAILED));
                 return;
             } else if (status == 133) {
