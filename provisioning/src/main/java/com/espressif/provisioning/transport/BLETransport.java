@@ -177,7 +177,7 @@ public class BLETransport implements Transport {
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
 
             super.onConnectionStateChange(gatt, status, newState);
-            Log.d(TAG, "onConnectionStateChange, New state : " + newState + ", Status : " + status);
+            Log.d(TAG, "onConnectionStateChange2, New state : " + newState + ", Status : " + status);
 
             if (status == 22) {
                 // terminated by local host (cancelled by user?)
