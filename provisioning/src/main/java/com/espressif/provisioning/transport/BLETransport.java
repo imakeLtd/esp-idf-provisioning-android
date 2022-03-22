@@ -188,41 +188,57 @@ public class BLETransport implements Transport {
                 prefEditor.commit();
                 Log.d(TAG, "onConnectionStateChange, SharedPreferences.putBoolean.EspConnectionCancelled = true");
             } else if (status == BluetoothGatt.GATT_FAILURE) {
+
+                Log.d(TAG, "onConnectionStateChange, case 2");
                 EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_CONNECTION_FAILED));
                 return;
             } else if (status == 133) {
+                Log.d(TAG, "onConnectionStateChange, case 3");
                 EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_CONNECTION_FAILED));
                 return;
             } else if (status != BluetoothGatt.GATT_SUCCESS && newState != BluetoothProfile.STATE_DISCONNECTED) {
+                Log.d(TAG, "onConnectionStateChange, case 4");
                 // TODO need to check this status
                 return;
             }
 
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 Log.e(TAG, "Connected to GATT server.");
+
+                Log.d(TAG, "onConnectionStateChange, case 5");
                 gatt.discoverServices();
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+
+                Log.d(TAG, "onConnectionStateChange, case 6");
                 Log.e(TAG, "Disconnected from GATT server.");
                 EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_DISCONNECTED));
             }
+            Log.d(TAG, "onConnectionStateChange, case 7");
         }
 
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
 
+            Log.d(TAG, "onServicesDiscovered, 1");
             super.onServicesDiscovered(gatt, status);
             Log.d(TAG, "On services discovered");
 
+            Log.d(TAG, "onServicesDiscovered, 2");
             if (status != BluetoothGatt.GATT_SUCCESS) {
                 Log.d(TAG, "Status not success");
+
+            Log.d(TAG, "onServicesDiscovered, 3");
                 EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_CONNECTION_FAILED));
                 return;
             }
 
+            Log.d(TAG, "onServicesDiscovered, 4");
             service = gatt.getService(UUID.fromString(serviceUuid));
 
             if (service == null) {
                 Log.e(TAG, "Service not found!");
+
+            Log.d(TAG, "onServicesDiscovered, 5");
                 EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_CONNECTION_FAILED));
                 return;
             }
@@ -231,6 +247,8 @@ public class BLETransport implements Transport {
 
                 if (characteristic == null) {
                     Log.e(TAG, "Tx characteristic not found!");
+
+            Log.d(TAG, "onServicesDiscovered, 6");
                     EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_CONNECTION_FAILED));
                     return;
                 }
@@ -242,6 +260,7 @@ public class BLETransport implements Transport {
                 characteristic.setWriteType(BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT);
             }
 
+            Log.d(TAG, "onServicesDiscovered, 7");
             readNextDescriptor();
         }
 
@@ -317,12 +336,14 @@ public class BLETransport implements Transport {
             Log.d(TAG, "onCharacteristicRead, status " + status + " UUID : " + characteristic.getUuid().toString());
             super.onCharacteristicRead(gatt, characteristic, status);
 
+            Log.d(TAG, "onCharacteristicRead, 1");
             if (uuidMap.get((ESPConstants.HANDLER_PROTO_VER)).equals(characteristic.getUuid().toString())) {
 
                 String data = new String(characteristic.getValue(), StandardCharsets.UTF_8);
                 Log.d(TAG, "Value : " + data);
                 versionInfo = data;
 
+                Log.d(TAG, "onCharacteristicRead, 2");
                 try {
                     JSONObject jsonObject = new JSONObject(data);
                     JSONObject provInfo = jsonObject.getJSONObject("prov");
@@ -343,6 +364,7 @@ public class BLETransport implements Transport {
                     Log.d(TAG, "Capabilities JSON not available.");
                 }
 
+                Log.d(TAG, "onCharacteristicRead, 3");
                 EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_CONNECTED));
             }
 
@@ -350,7 +372,7 @@ public class BLETransport implements Transport {
 
                 if (status == BluetoothGatt.GATT_SUCCESS) {
                     /*
-                     * Need to dispatch this on another thread since the caller
+                     * Need to dispatch this on another thread sinsce the caller
                      * might decide to enqueue another send operation on success
                      * of the first.
                      */
