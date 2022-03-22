@@ -790,7 +790,7 @@ public class ESPDevice {
     }
 
     private void pollForWifiConnectionStatus() {
-
+        Log.e(TAG, "func pollForWifiConnectionStatus");
         byte[] message = MessengeHelper.prepareGetWiFiConfigStatusMsg();
         session.sendDataToDevice(ESPConstants.HANDLER_PROV_CONFIG, message, new ResponseListener() {
 
@@ -801,6 +801,8 @@ public class ESPDevice {
                 WifiConstants.WifiStationState wifiStationState = (WifiConstants.WifiStationState) statuses[0];
                 WifiConstants.WifiConnectFailedReason failedReason = (WifiConstants.WifiConnectFailedReason) statuses[1];
 
+                Log.e(TAG, "pollForWifiConnectionStatus onSuccess wifiStationState" + wifiStationState);
+                Log.e(TAG, "pollForWifiConnectionStatus onSuccess failedReason" + failedReason);
                 if (wifiStationState == WifiConstants.WifiStationState.Connected) {
 
                     // Provision success
@@ -822,12 +824,14 @@ public class ESPDevice {
                 } else if (wifiStationState == WifiConstants.WifiStationState.Connecting) {
 
                     try {
-                        sleep(5000);
+                        sleep(1000);
+                        Log.e(TAG, "pollForWifiConnectionStatus sendDataToDevice() onSuccess Connecting done seeling calling pollForWifiConnectionStatus again");
                         pollForWifiConnectionStatus();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                         session = null;
                         disableOnlyWifiNetwork();
+                        Log.e(TAG, "pollForWifiConnectionStatus sendDataToDevice() onSuccess recursion e: " + e.toString());
                         provisionListener.onProvisioningFailed(new RuntimeException("Provisioning Failed"));
                     }
                 } else {
@@ -852,6 +856,7 @@ public class ESPDevice {
             public void onFailure(Exception e) {
                 e.printStackTrace();
                 disableOnlyWifiNetwork();
+                Log.e(TAG, "pollForWifiConnectionStatus sendDataToDevice onFailure  e: " + e.toString());
                 provisionListener.onProvisioningFailed(new RuntimeException("Provisioning Failed"));
             }
         });
