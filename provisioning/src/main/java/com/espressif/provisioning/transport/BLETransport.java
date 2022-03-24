@@ -22,7 +22,10 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Build;
@@ -68,6 +71,7 @@ public class BLETransport implements Transport {
     private ArrayList<String> charUuidList = new ArrayList<>();
     final Handler bleHandler = new Handler();
     private Runnable discoverServicesRunnable;
+    private BroadcastReceiver receiver;
 
     private String serviceUuid;
     private boolean isReadingDescriptors = false;
@@ -83,6 +87,28 @@ public class BLETransport implements Transport {
         this.context = context;
         this.transportToken = new Semaphore(1);
         this.dispatcherThreadPool = Executors.newSingleThreadExecutor();
+
+
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                String action = intent.getAction();
+                Log.d(TAG, "BroadcastReceiver.onReceive");
+                if (BluetoothDevice.ACTION_BOND_STATE_CHANGED.equals(action)){
+                    Log.d(TAG, "BroadcastReceiver.onReceive ACTION_BOND_STATE_CHANGED");
+                    BluetoothDevice mDevice = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
+                    if (mDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
+                        //means device paired
+                        Log.d(TAG, "bonded");
+                    }
+                    else if(mDevice.getBondState() == BluetoothDevice.BOND_BONDING) {
+                        Log.d(TAG, "bonding");
+                    }
+                }
+            }
+        };
+        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_BOND_STATE_CHANGED);
+        context.registerReceiver(receiver, filter);
     }
 
     /**
@@ -185,6 +211,8 @@ public class BLETransport implements Transport {
             super.onConnectionStateChange(gatt, status, newState);
             Log.d(TAG, "onConnectionStateChange2, New state : " + newState + ", Status : " + status);
 
+            int bondstate = currentDevice.getBondState();
+            Log.d(TAG, "onConnectionStateChange, device bondstate: " + bondstate);
             if (status == 22) {
                 // terminated by local host (cancelled by user?)
                 Log.d(TAG, "onConnectionStateChange, status 22 - terminated by local host (cancelled by user?)");
@@ -212,10 +240,15 @@ public class BLETransport implements Transport {
                 Log.e(TAG, "Connected to GATT server.");
 
                 Log.d(TAG, "onConnectionStateChange, case 5");
-                int bondstate = currentDevice.getBondState();
-                Log.d(TAG, "onConnectionStateChange, device bondstate: " + bondstate);
                 // Take action depending on the bond state
-                if(bondstate == BOND_NONE || bondstate == BOND_BONDED) {
+                if (bondstate == BOND_NONE) {
+                    Log.d(TAG, "onConnectionStateChange, case 5.1 - continue to discoverServices");
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
+                        currentDevice.createBond();
+                    } else {
+                        gatt.discoverServices();
+                    }
+                } else if (bondstate == BOND_BONDED) {
                     Log.d(TAG, "onConnectionStateChange, case 5.2 - continue to discoverServices");
                     gatt.discoverServices();
 
