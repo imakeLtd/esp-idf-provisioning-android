@@ -46,6 +46,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
+import static android.bluetooth.BluetoothDevice.BOND_BONDED;
+import static android.bluetooth.BluetoothDevice.BOND_NONE;
+
 /**
  * Bluetooth implementation of the Transport protocol.
  */
@@ -206,7 +209,16 @@ public class BLETransport implements Transport {
                 Log.e(TAG, "Connected to GATT server.");
 
                 Log.d(TAG, "onConnectionStateChange, case 5");
-                gatt.discoverServices();
+                int bondstate = currentDevice.getBondState();
+                Log.d(TAG, "onConnectionStateChange, device bondstate: " + bondstate);
+                // Take action depending on the bond state
+                if(bondstate == BOND_NONE || bondstate == BOND_BONDED) {
+                    Log.d(TAG, "onConnectionStateChange, case 5.2 - continue to discoverServices");
+                    gatt.discoverServices();
+                } else {
+                    Log.d(TAG, "onConnectionStateChange, BOND_BONDING - wait for bonding to complete...");
+                    // wait for bonding to complete
+                }
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
 
                 Log.d(TAG, "onConnectionStateChange, case 6");
