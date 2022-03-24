@@ -417,12 +417,15 @@ public class BLETransport implements Transport {
     };
 
     private void readNextDescriptor() {
-
+        
+        Log.e(TAG, "readNextDescriptor()");
         boolean found = false;
 
         for (int i = 0; i < charUuidList.size(); i++) {
 
             String uuid = charUuidList.get(i);
+            Log.e(TAG, "readNextDescriptor for loop, i:" + i);
+            Log.e(TAG, "readNextDescriptor for loop, uuid:" + uuid);
 
             if (!uuidMap.containsValue(uuid)) {
 
@@ -445,6 +448,7 @@ public class BLETransport implements Transport {
             }
         }
 
+        Log.e(TAG, "readNextDescriptor found:" + found);
         if (found) {
             isReadingDescriptors = true;
         } else {
@@ -453,9 +457,11 @@ public class BLETransport implements Transport {
 
             BluetoothGattCharacteristic characteristic = service.getCharacteristic(UUID.fromString(uuidMap.get(ESPConstants.HANDLER_PROTO_VER)));
 
+            Log.e(TAG, "onDescriptorRead characteristic to write: " + characteristic);
             if (characteristic != null) {
                 characteristic.setValue("ESP");
-                bluetoothGatt.writeCharacteristic(characteristic);
+                boolean result = bluetoothGatt.writeCharacteristic(characteristic);
+                Log.e(TAG, "onDescriptorRead writeCharacteristic result: " + result);
             }
         }
     }
