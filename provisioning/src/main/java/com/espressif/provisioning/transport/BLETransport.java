@@ -26,6 +26,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Build;
+import android.os.Handler;
 import android.util.Log;
 
 import com.espressif.provisioning.DeviceConnectionEvent;
@@ -65,6 +66,8 @@ public class BLETransport implements Transport {
     private ExecutorService dispatcherThreadPool;
     private HashMap<String, String> uuidMap = new HashMap<>();
     private ArrayList<String> charUuidList = new ArrayList<>();
+    final Handler bleHandler = new Handler();
+    private Runnable discoverServicesRunnable;
 
     private String serviceUuid;
     private boolean isReadingDescriptors = false;
@@ -215,6 +218,27 @@ public class BLETransport implements Transport {
                 if(bondstate == BOND_NONE || bondstate == BOND_BONDED) {
                     Log.d(TAG, "onConnectionStateChange, case 5.2 - continue to discoverServices");
                     gatt.discoverServices();
+
+                    // Connected to device, now proceed to discover it's services but delay a bit if needed
+                    int delayWhenBonded = 0;
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
+                        delayWhenBonded = 1000;
+                    }
+                    Log.d(TAG, "onConnectionStateChange, delayWhenBonded: " + delayWhenBonded);
+                    final int delay = delayWhenBonded;
+                    discoverServicesRunnable = new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.d(TAG, "discovering services with delay of %d ms" + delay);
+                            boolean result = gatt.discoverServices();
+                            if (!result) {
+                                Log.e(TAG, "discoverServices failed to start");
+                            }
+                            discoverServicesRunnable = null;
+                        }
+                    };
+                    bleHandler.postDelayed(discoverServicesRunnable, delay);
+                    
                 } else {
                     Log.d(TAG, "onConnectionStateChange, BOND_BONDING - wait for bonding to complete...");
                     // wait for bonding to complete
