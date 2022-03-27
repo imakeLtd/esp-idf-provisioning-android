@@ -70,7 +70,6 @@ public class BLETransport implements Transport {
     private HashMap<String, String> uuidMap = new HashMap<>();
     private ArrayList<String> charUuidList = new ArrayList<>();
     final Handler bleHandler = new Handler();
-    private Runnable discoverServicesRunnable;
     private BroadcastReceiver receiver;
 
     private String serviceUuid;
@@ -100,6 +99,9 @@ public class BLETransport implements Transport {
                     if (mDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
                         //means device paired
                         Log.d(TAG, "bonded");
+                        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
+                            refreshServices();
+                        }
                     }
                     else if(mDevice.getBondState() == BluetoothDevice.BOND_BONDING) {
                         Log.d(TAG, "bonding");
@@ -239,7 +241,7 @@ public class BLETransport implements Transport {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 Log.e(TAG, "Connected to GATT server.");
 
-                Log.d(TAG, "onConnectionStateChange, case 5");
+                Log.d(TAG, "onConnectionStateChange, case 5, sdk version:" + Build.VERSION.SDK_INT);
                 // Take action depending on the bond state
                 if (bondstate == BOND_NONE) {
                     Log.d(TAG, "onConnectionStateChange, case 5.1 - continue to discoverServices");
@@ -255,7 +257,7 @@ public class BLETransport implements Transport {
                     // Connected to device, now proceed to discover it's services but delay a bit if needed
                     int delayWhenBonded = 0;
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
-                        delayWhenBonded = 1000;
+                        delayWhenBonded = 3000;
                     }
                     Log.d(TAG, "onConnectionStateChange, delayWhenBonded: " + delayWhenBonded);
                     final int delay = delayWhenBonded;
