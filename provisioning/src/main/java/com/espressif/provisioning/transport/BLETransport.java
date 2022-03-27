@@ -70,7 +70,6 @@ public class BLETransport implements Transport {
     private HashMap<String, String> uuidMap = new HashMap<>();
     private ArrayList<String> charUuidList = new ArrayList<>();
     final Handler bleHandler = new Handler();
-    private Runnable discoverServicesRunnable;
     private BroadcastReceiver receiver;
 
     private String serviceUuid;
@@ -100,6 +99,9 @@ public class BLETransport implements Transport {
                     if (mDevice.getBondState() == BluetoothDevice.BOND_BONDED) {
                         //means device paired
                         Log.d(TAG, "bonded");
+                        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
+                            refreshServices();
+                        }
                     }
                     else if(mDevice.getBondState() == BluetoothDevice.BOND_BONDING) {
                         Log.d(TAG, "bonding");
@@ -241,41 +243,11 @@ public class BLETransport implements Transport {
 
                 Log.d(TAG, "onConnectionStateChange, case 5");
                 // Take action depending on the bond state
-                if (bondstate == BOND_NONE) {
-                    Log.d(TAG, "onConnectionStateChange, case 5.1 - continue to discoverServices");
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
                         currentDevice.createBond();
                     } else {
                         gatt.discoverServices();
                     }
-                } else if (bondstate == BOND_BONDED) {
-                    Log.d(TAG, "onConnectionStateChange, case 5.2 - continue to discoverServices");
-                    gatt.discoverServices();
-
-                    // Connected to device, now proceed to discover it's services but delay a bit if needed
-                    int delayWhenBonded = 0;
-                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
-                        delayWhenBonded = 1000;
-                    }
-                    Log.d(TAG, "onConnectionStateChange, delayWhenBonded: " + delayWhenBonded);
-                    final int delay = delayWhenBonded;
-                    discoverServicesRunnable = new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.d(TAG, "discovering services with delay of %d ms" + delay);
-                            boolean result = gatt.discoverServices();
-                            if (!result) {
-                                Log.e(TAG, "discoverServices failed to start");
-                            }
-                            discoverServicesRunnable = null;
-                        }
-                    };
-                    bleHandler.postDelayed(discoverServicesRunnable, delay);
-                    
-                } else {
-                    Log.d(TAG, "onConnectionStateChange, BOND_BONDING - wait for bonding to complete...");
-                    // wait for bonding to complete
-                }
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
 
                 Log.d(TAG, "onConnectionStateChange, case 6");
