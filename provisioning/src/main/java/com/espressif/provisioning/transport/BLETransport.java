@@ -70,6 +70,7 @@ public class BLETransport implements Transport {
     private HashMap<String, String> uuidMap = new HashMap<>();
     private ArrayList<String> charUuidList = new ArrayList<>();
     final Handler bleHandler = new Handler();
+    private Runnable discoverServicesRunnable;
     private BroadcastReceiver receiver;
 
     private String serviceUuid;
