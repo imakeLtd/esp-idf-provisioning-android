@@ -822,7 +822,7 @@ public class ESPDevice {
                 } else if (wifiStationState == WifiConstants.WifiStationState.Connecting) {
 
                     try {
-                        sleep(5000);
+                        sleep(500);
                         pollForWifiConnectionStatus();
                     } catch (InterruptedException e) {
                         e.printStackTrace();
