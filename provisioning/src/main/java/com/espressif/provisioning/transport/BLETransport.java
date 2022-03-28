@@ -101,7 +101,20 @@ public class BLETransport implements Transport {
                         //means device paired
                         Log.d(TAG, "bonded");
                         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
-                            refreshServices();
+                            bluetoothGatt.discoverServices();
+                            final int delay = 3000;
+                            discoverServicesRunnable = new Runnable() {
+                                @Override
+                                public void run() {
+                                    Log.d(TAG, "discovering services with delay of %d ms" + delay);
+                                    boolean result = bluetoothGatt.discoverServices();
+                                    if (!result) {
+                                        Log.e(TAG, "discoverServices failed to start");
+                                    }
+                                    discoverServicesRunnable = null;
+                                }
+                            };
+                            bleHandler.postDelayed(discoverServicesRunnable, delay);
                         }
                     }
                     else if(mDevice.getBondState() == BluetoothDevice.BOND_BONDING) {
@@ -243,42 +256,8 @@ public class BLETransport implements Transport {
                 Log.e(TAG, "Connected to GATT server.");
 
                 Log.d(TAG, "onConnectionStateChange, case 5, sdk version:" + Build.VERSION.SDK_INT);
-                // Take action depending on the bond state
-                if (bondstate == BOND_NONE) {
                     Log.d(TAG, "onConnectionStateChange, case 5.1 - continue to discoverServices");
-                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
-                        currentDevice.createBond();
-                    } else {
                         gatt.discoverServices();
-                    }
-                } else if (bondstate == BOND_BONDED) {
-                    Log.d(TAG, "onConnectionStateChange, case 5.2 - continue to discoverServices");
-                    gatt.discoverServices();
-
-                    // Connected to device, now proceed to discover it's services but delay a bit if needed
-                    int delayWhenBonded = 0;
-                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N) {
-                        delayWhenBonded = 3000;
-                    }
-                    Log.d(TAG, "onConnectionStateChange, delayWhenBonded: " + delayWhenBonded);
-                    final int delay = delayWhenBonded;
-                    discoverServicesRunnable = new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.d(TAG, "discovering services with delay of %d ms" + delay);
-                            boolean result = gatt.discoverServices();
-                            if (!result) {
-                                Log.e(TAG, "discoverServices failed to start");
-                            }
-                            discoverServicesRunnable = null;
-                        }
-                    };
-                    bleHandler.postDelayed(discoverServicesRunnable, delay);
-                    
-                } else {
-                    Log.d(TAG, "onConnectionStateChange, BOND_BONDING - wait for bonding to complete...");
-                    // wait for bonding to complete
-                }
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
 
                 Log.d(TAG, "onConnectionStateChange, case 6");
@@ -339,8 +318,11 @@ public class BLETransport implements Transport {
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
 
+            Log.d(TAG, "DescriptorWrite, : Status " + status);
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 Log.d(TAG, "Read Descriptor : " + bluetoothGatt.readDescriptor(descriptor));
+            } else if (status == BluetoothGatt.GATT_INSUFFICIENT_AUTHENTICATION) {
+                Log.e(TAG, "GATT_INSUFFICIENT_AUTHENTICATION");
             } else {
                 Log.e(TAG, "Fail to write descriptor");
                 EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_CONNECTION_FAILED));
@@ -478,6 +460,9 @@ public class BLETransport implements Transport {
 
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 bluetoothGatt.readCharacteristic(characteristic);
+            }  else if (status == BluetoothGatt.GATT_INSUFFICIENT_AUTHENTICATION) {
+                Log.e(TAG, "GATT_INSUFFICIENT_AUTHENTICATION");
+                currentDevice.createBond();
             } else {
                 if (currentResponseListener != null) {
                     currentResponseListener.onFailure(new Exception("Write to BLE failed"));
