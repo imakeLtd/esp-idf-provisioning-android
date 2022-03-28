@@ -824,7 +824,7 @@ public class ESPDevice {
                 } else if (wifiStationState == WifiConstants.WifiStationState.Connecting) {
 
                     try {
-                        sleep(1000);
+                        sleep(500);
                         Log.e(TAG, "pollForWifiConnectionStatus sendDataToDevice() onSuccess Connecting done seeling calling pollForWifiConnectionStatus again");
                         pollForWifiConnectionStatus();
                     } catch (InterruptedException e) {
