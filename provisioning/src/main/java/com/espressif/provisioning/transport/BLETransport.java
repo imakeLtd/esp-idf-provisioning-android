@@ -46,6 +46,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 
+import espressif.Constants;
+
 /**
  * Bluetooth implementation of the Transport protocol.
  */
@@ -55,6 +57,8 @@ public class BLETransport implements Transport {
 
     private Context context;
     private BluetoothDevice currentDevice;
+
+    private ESPConstants.SecurityType securityType;
     private BluetoothGatt bluetoothGatt;
     private BluetoothGattService service;
     private ResponseListener currentResponseListener;
@@ -73,8 +77,9 @@ public class BLETransport implements Transport {
      *
      * @param context
      */
-    public BLETransport(Context context) {
+    public BLETransport(Context context, ESPConstants.SecurityType securityType) {
         this.context = context;
+        this.securityType = securityType;
         this.transportToken = new Semaphore(1);
         this.dispatcherThreadPool = Executors.newSingleThreadExecutor();
     }
@@ -330,6 +335,16 @@ public class BLETransport implements Transport {
                     String versionInfo = provInfo.getString("ver");
                     Log.d(TAG, "Device Version : " + versionInfo);
 
+                    String secInfo = provInfo.getString("sec_ver");
+                    if (!securityType.equals(ESPConstants.SecurityType.values()[Integer.valueOf(secInfo)])) {
+                        SharedPreferences prefs = context.getSharedPreferences("prefs.db", 0);
+                        SharedPreferences.Editor prefEditor = prefs.edit();
+                        prefEditor.putBoolean("EspProvSecurityMismatch", true);
+                        prefEditor.commit();
+                        EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_CONNECTION_FAILED));
+                        transportToken.release();
+                        return;
+                    }
                     JSONArray capabilities = provInfo.getJSONArray("cap");
 
                     for (int i = 0; i < capabilities.length(); i++) {

@@ -17,6 +17,7 @@ package com.espressif.provisioning;
 import android.Manifest;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -111,7 +112,7 @@ public class ESPDevice {
         switch (transportType) {
 
             case TRANSPORT_BLE:
-                transport = new BLETransport(context);
+                transport = new BLETransport(context, securityType);
                 break;
 
             case TRANSPORT_SOFTAP:
@@ -1079,6 +1080,16 @@ public class ESPDevice {
 
                         String versionInfo = provInfo.getString("ver");
                         Log.d(TAG, "Device Version : " + versionInfo);
+
+                        String secInfo = provInfo.getString("sec_ver");
+                        if (!securityType.equals(ESPConstants.SecurityType.values()[Integer.valueOf(secInfo)])) {
+                            SharedPreferences prefs = context.getSharedPreferences("prefs.db", 0);
+                            SharedPreferences.Editor prefEditor = prefs.edit();
+                            prefEditor.putBoolean("EspProvSecurityMismatch", true);
+                            prefEditor.commit();
+                            EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_CONNECTION_FAILED));
+                            return;
+                        }
 
                         JSONArray capabilities = provInfo.getJSONArray("cap");
 
