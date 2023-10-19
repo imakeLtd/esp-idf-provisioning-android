@@ -1069,7 +1069,7 @@ public class ESPDevice {
                 public void onSuccess(byte[] returnData) {
 
                     String data = new String(returnData, StandardCharsets.UTF_8);
-                    Log.d(TAG, "Value : " + data);
+                    Log.d(TAG, "Value z : " + data);
                     versionInfo = data;
                     deviceCapabilities = new ArrayList<>();
 
@@ -1078,7 +1078,12 @@ public class ESPDevice {
                         JSONObject provInfo = jsonObject.getJSONObject("prov");
 
                         String versionInfo = provInfo.getString("ver");
-                        Log.d(TAG, "Device Version : " + versionInfo);
+                        Log.d(TAG, "Device Version zz : " + versionInfo);
+
+                        String secInfo = provInfo.getString("sec_ver");
+                        Log.d(TAG, "Security enabled: " + secInfo);
+                        Log.d(TAG, "ESPDevice security param (securityType): " + securityType);
+                        Log.d(TAG, "deviceConnectionReqCount: " + deviceConnectionReqCount);
 
                         JSONArray capabilities = provInfo.getJSONArray("cap");
 
