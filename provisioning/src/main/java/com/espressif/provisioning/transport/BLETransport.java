@@ -343,6 +343,7 @@ public class BLETransport implements Transport {
                         prefEditor.commit();
                         EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_CONNECTION_FAILED));
                         transportToken.release();
+                        disconnect();
                         return;
                     }
                     JSONArray capabilities = provInfo.getJSONArray("cap");

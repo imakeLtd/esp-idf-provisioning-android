@@ -1088,6 +1088,7 @@ public class ESPDevice {
                             prefEditor.putBoolean("EspProvSecurityMismatch", true);
                             prefEditor.commit();
                             EventBus.getDefault().post(new DeviceConnectionEvent(ESPConstants.EVENT_DEVICE_CONNECTION_FAILED));
+                            disconnectDevice();
                             return;
                         }
 
